@@ -70,6 +70,10 @@ screenshots/
 
 The 7×9 bitmap font, the sim and the UI all live in `index.html`; there are no dependencies and nothing to build.
 
+## License
+
+[MIT](LICENSE) — code, lyrics, recordings and covers alike. Take it, fork it, remix it.
+
 ## Credits
 
 Made by [Anna Brezgis](https://github.com/brezgis). Bowing to Conway, von Neumann, Gardner — and to БГ.
