@@ -1,0 +1,5 @@
+# earlier six-engine "bestiary" version and its policy files — kept locally only
+index_legacy.html
+colony_policy.js
+colony_gpu.js
+.DS_Store

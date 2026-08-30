@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>БУКВАРИУМ</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 7 9" shape-rendering="crispEdges"><rect x="0" y="0" width="7" height="9" fill="#000"/><g fill="#4a1818" transform="translate%280.35,0.35%29"><rect x="0" y="1" width="1" height="1"/><rect x="3" y="1" width="1" height="1"/><rect x="6" y="1" width="1" height="1"/><rect x="0" y="2" width="1" height="1"/><rect x="3" y="2" width="1" height="1"/><rect x="6" y="2" width="1" height="1"/><rect x="1" y="3" width="1" height="1"/><rect x="3" y="3" width="1" height="1"/><rect x="5" y="3" width="1" height="1"/><rect x="2" y="4" width="1" height="1"/><rect x="3" y="4" width="1" height="1"/><rect x="4" y="4" width="1" height="1"/><rect x="1" y="5" width="1" height="1"/><rect x="3" y="5" width="1" height="1"/><rect x="5" y="5" width="1" height="1"/><rect x="0" y="6" width="1" height="1"/><rect x="3" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/><rect x="0" y="7" width="1" height="1"/><rect x="3" y="7" width="1" height="1"/><rect x="6" y="7" width="1" height="1"/></g><g fill="#ff5555"><rect x="0" y="1" width="1" height="1"/><rect x="3" y="1" width="1" height="1"/><rect x="6" y="1" width="1" height="1"/><rect x="0" y="2" width="1" height="1"/><rect x="3" y="2" width="1" height="1"/><rect x="6" y="2" width="1" height="1"/><rect x="1" y="3" width="1" height="1"/><rect x="3" y="3" width="1" height="1"/><rect x="5" y="3" width="1" height="1"/><rect x="2" y="4" width="1" height="1"/><rect x="3" y="4" width="1" height="1"/><rect x="4" y="4" width="1" height="1"/><rect x="1" y="5" width="1" height="1"/><rect x="3" y="5" width="1" height="1"/><rect x="5" y="5" width="1" height="1"/><rect x="0" y="6" width="1" height="1"/><rect x="3" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/><rect x="0" y="7" width="1" height="1"/><rect x="3" y="7" width="1" height="1"/><rect x="6" y="7" width="1" height="1"/></g></svg>">
+<style>
+  :root {
+    --fg: #c8c8c8;
+    --dim: #6a6a72;
+    --faint: #2c2c34;
+    --vowel: #ffff55;
+    --voiced: #ff5555;
+    --voiceless: #55ffff;
+    --sonorant: #55ff55;
+    --other: #f0f0f0;
+    --sign: #ff55ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #000; }
+  body {
+    color: var(--fg);
+    font-family: ui-monospace, "Cascadia Mono", "JetBrains Mono", Menlo, monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 32px 60px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .frame { width: 100%; max-width: 1300px; }
+
+  header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+  #title { image-rendering: pixelated; display: block; }
+  .hdr { display: flex; gap: 18px; align-items: center; }
+  .hdr button.on { color: var(--vowel); }
+
+  .stage { display: flex; gap: 14px; align-items: stretch; }
+  .screen {
+    flex: 1 1 auto;
+    min-width: 0;
+    contain: inline-size;
+    padding: 5px;
+    background: #050508;
+    /* ZX Spectrum loading border */
+    border: 3px solid;
+    border-image: repeating-linear-gradient(-45deg, #123a3a 0 9px, #3a3a12 9px 18px) 3;
+  }
+  #sim { display: block; width: 100%; max-width: 100%; height: clamp(420px, 62vh, 760px); image-rendering: pixelated; cursor: crosshair; touch-action: none; }
+  .frame, .stage, aside { min-width: 0; }
+
+  aside {
+    flex: 0 0 260px;
+    border: 1px solid var(--faint);
+    position: relative;   /* content is absolutely placed so the canvas rules the row height */
+  }
+  .radiola {
+    position: absolute;
+    inset: 0;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow: hidden;
+  }
+  .radiola h2, #help h2 {
+    font-size: 14px;
+    font-weight: normal;
+    color: var(--dim);
+    border-bottom: 1px solid var(--faint);
+    padding-bottom: 5px;
+  }
+  #cover { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; image-rendering: pixelated; flex: 0 0 auto; margin: 2px 0 4px; border: 1px solid var(--faint); }
+  .r-head { color: var(--fg); }
+  .r-head b { font-weight: normal; color: var(--vowel); }
+  .r-sub { color: var(--dim); }
+  .r-controls { display: flex; gap: 4px 10px; flex-wrap: wrap; }
+  .r-controls button { font-size: 12px; letter-spacing: 0; }
+  .r-lyric {
+    margin-top: 6px;
+    text-transform: none;
+    letter-spacing: 0.03em;
+    color: var(--fg);
+    height: 7.5em;
+    overflow: hidden;
+  }
+  .r-lyric .roll { will-change: transform; }
+  .r-lyric .roll.slide { transition: transform .5s ease; }
+  .r-lyric div div { min-height: 1.5em; transition: color .5s ease; }
+  .r-lyric .prev, .r-lyric .next { color: var(--faint); }
+  .r-lyric .cur { color: var(--fg); }
+
+  .controls { margin-top: 14px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  button {
+    background: none; border: none; color: var(--fg);
+    font: inherit; letter-spacing: inherit; text-transform: inherit;
+    cursor: pointer; padding: 2px 0; white-space: nowrap;
+  }
+  button::before { content: "[ "; color: var(--faint); }
+  button::after  { content: " ]"; color: var(--faint); }
+  button:hover, button:focus-visible { color: #fff; outline: none; }
+  .stats { margin-top: 8px; color: var(--dim); }
+  .stats b { font-weight: normal; }
+  .n-vowel, .l-vowel { color: var(--vowel); }
+  .n-voiced, .l-voiced { color: var(--voiced); }
+  .n-voiceless, .l-voiceless { color: var(--voiceless); }
+  .n-sonorant, .l-sonorant { color: var(--sonorant); }
+  .n-other, .l-other { color: var(--other); }
+  .n-sign, .l-sign { color: var(--sign); }
+  .note { color: var(--faint); }
+
+  /* language: only the active language's text is shown */
+  [lang="ru"] .en, [lang="en"] .ru { display: none !important; }
+
+  /* help panel */
+  #help { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.82); z-index: 10; overflow: auto; padding: 40px 14px; }
+  #help.open { display: block; }
+  .help-in {
+    max-width: 640px; margin: 0 auto; background: #000; border: 1px solid var(--faint); padding: 18px 20px 22px;
+    text-transform: none; letter-spacing: 0.03em; line-height: 1.6;
+  }
+  .help-in h2 { text-transform: uppercase; letter-spacing: 0.08em; margin: 14px 0 6px; }
+  .help-in h2:first-child { margin-top: 0; }
+  .help-in p, .help-in li { color: var(--fg); }
+  .help-in ul { list-style: none; }
+  .help-in li::before { content: "· "; color: var(--faint); }
+  .help-in a { color: var(--voiceless); text-decoration: none; border-bottom: 1px dotted var(--faint); }
+  .help-in a:hover { color: #fff; }
+  .help-in kbd { color: var(--vowel); font: inherit; }
+  .help-close { margin-top: 14px; }
+  .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 1px 14px; line-height: 1.4; }
+  .legend div::before { content: "█ "; }
+
+  @media (max-width: 900px) {
+    .stage { flex-direction: column; }
+    aside { flex-basis: auto; }
+    .radiola { position: static; }
+  }
+</style>
+</head>
+<body>
+<div class="frame">
+  <header>
+    <canvas id="title" width="316" height="40"></canvas>
+    <div class="hdr">
+      <button id="lang-ru">рус</button>
+      <button id="lang-en">eng</button>
+      <button id="help-btn" title="?">?</button>
+    </div>
+  </header>
+
+  <div class="stage">
+    <div class="screen"><canvas id="sim" width="960" height="560"></canvas></div>
+    <aside>
+      <div class="radiola">
+        <h2><span class="ru">радиола</span><span class="en">radiola</span></h2>
+        <img id="cover" alt="">
+        <div class="r-head"><b id="r-title">…</b></div>
+        <div class="r-sub" id="r-sub">…</div>
+        <div class="r-controls">
+          <button id="r-prev" title="назад">◀◀</button>
+          <button id="r-play" title="играть">▶</button>
+          <button id="r-next" title="вперёд">▶▶</button>
+        </div>
+        <div class="r-lyric" id="r-lyric"></div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="controls">
+    <button id="pause"><span class="ru">пауза</span><span class="en">pause</span></button>
+    <button id="step"><span class="ru">шаг</span><span class="en">step</span></button>
+    <button id="speed"><span class="ru">скорость</span><span class="en">speed</span> <span id="speed-v">×1</span></button>
+    <button id="zoom"><span class="ru">масштаб</span><span class="en">zoom</span> <span id="zoom-v">×1</span></button>
+    <button id="reset"><span class="ru">сброс</span><span class="en">reset</span></button>
+    <button id="clear"><span class="ru">очистить</span><span class="en">clear</span></button>
+  </div>
+  <p class="stats" id="stats">…</p>
+</div>
+
+<div id="help">
+  <div class="help-in">
+    <div class="ru">
+      <h2>что это</h2>
+      <p>Обычная «Жизнь» Джона Конвея — правило B3/S23: мёртвая клетка оживает, если у неё ровно три живых соседа; живая выживает при двух или трёх, иначе умирает. Только вместо квадратиков — буквы. Новорождённая клетка берёт букву одного из трёх своих родителей, выжившая хранит свою. Плоскость бесконечна: планеры улетают за экран и живут дальше.</p>
+      <p>Цвет буквы — её фонетический класс:</p>
+      <div class="legend">
+        <div class="l-vowel">гласные</div><div class="l-voiced">звонкие</div>
+        <div class="l-voiceless">глухие</div><div class="l-sonorant">сонорные</div>
+        <div class="l-sign">знаки</div>
+      </div>
+      <h2>управление</h2>
+      <ul>
+        <li><kbd>клик</kbd> / <kbd>перетаскивание</kbd> — рисовать буквы (по живой — стирать)</li>
+        <li><kbd>правая кнопка</kbd>, <kbd>средняя</kbd> или <kbd>shift + перетаскивание</kbd>, <kbd>стрелки</kbd> — двигать камеру</li>
+        <li><kbd>колесо</kbd>, <kbd>+</kbd> / <kbd>−</kbd> — масштаб · <kbd>пробел</kbd> — пауза · <kbd>N</kbd> или <kbd>.</kbd> — один шаг · <kbd>R</kbd> — новый суп</li>
+        <li>в адресе: <kbd>?seed=N</kbd> — воспроизводимый суп, <kbd>?warp=N</kbd> — перемотать N поколений</li>
+      </ul>
+      <h2>почитать · послушать</h2>
+      <ul>
+        <li><a href="https://ru.wikipedia.org/wiki/Игра_«Жизнь»" target="_blank" rel="noopener">Игра «Жизнь»</a> — Джон Конвей, 1970</li>
+        <li><a href="https://web.stanford.edu/class/sts145/Library/life.pdf" target="_blank" rel="noopener">Колонка Мартина Гарднера в Scientific American</a>, которая её прославила</li>
+        <li><a href="https://ru.wikipedia.org/wiki/Клеточный_автомат" target="_blank" rel="noopener">Клеточные автоматы</a> и <a href="https://archive.org/details/theoryofselfrepr00vonn" target="_blank" rel="noopener">«Theory of Self-Reproducing Automata»</a> Джона фон Неймана, 1966</li>
+        <li><a href="https://conwaylife.com/wiki/" target="_blank" rel="noopener">LifeWiki</a> — планеры, ружья, космические корабли</li>
+        <li><a href="https://ru.wikipedia.org/wiki/Аквариум_(группа)" target="_blank" rel="noopener">Аквариум</a> — радиола играет четыре песни почти по их мотивам</li>
+      </ul>
+    </div>
+    <div class="en">
+      <h2>what this is</h2>
+      <p>John Conway's plain Game of Life — rule B3/S23: a dead cell is born with exactly three live neighbours; a live cell survives with two or three, otherwise it dies. Only instead of squares, the cells are Cyrillic letters. A newborn cell takes the letter of one of its three parents; a survivor keeps its own. The plane is infinite: gliders fly off screen and keep going.</p>
+      <p>A letter's colour is its phonetic class:</p>
+      <div class="legend">
+        <div class="l-vowel">vowels</div><div class="l-voiced">voiced</div>
+        <div class="l-voiceless">voiceless</div><div class="l-sonorant">sonorants</div>
+        <div class="l-sign">signs</div>
+      </div>
+      <h2>controls</h2>
+      <ul>
+        <li><kbd>click</kbd> / <kbd>drag</kbd> — draw letters (over a live one — erase)</li>
+        <li><kbd>right button</kbd>, <kbd>middle</kbd> or <kbd>shift + drag</kbd>, <kbd>arrow keys</kbd> — pan the camera</li>
+        <li><kbd>wheel</kbd>, <kbd>+</kbd> / <kbd>−</kbd> — zoom · <kbd>space</kbd> — pause · <kbd>N</kbd> or <kbd>.</kbd> — single step · <kbd>R</kbd> — new soup</li>
+        <li>in the URL: <kbd>?seed=N</kbd> — reproducible soup, <kbd>?warp=N</kbd> — fast-forward N generations</li>
+      </ul>
+      <h2>read · listen</h2>
+      <ul>
+        <li><a href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life" target="_blank" rel="noopener">Conway's Game of Life</a> — John Conway, 1970</li>
+        <li><a href="https://web.stanford.edu/class/sts145/Library/life.pdf" target="_blank" rel="noopener">Martin Gardner's Scientific American column</a> that made it famous</li>
+        <li><a href="https://en.wikipedia.org/wiki/Cellular_automaton" target="_blank" rel="noopener">Cellular automata</a> and John von Neumann's <a href="https://archive.org/details/theoryofselfrepr00vonn" target="_blank" rel="noopener">“Theory of Self-Reproducing Automata”</a>, 1966</li>
+        <li><a href="https://conwaylife.com/wiki/" target="_blank" rel="noopener">LifeWiki</a> — gliders, guns, spaceships</li>
+        <li><a href="https://en.wikipedia.org/wiki/Aquarium_(band)" target="_blank" rel="noopener">Aquarium (Аквариум)</a> — the radiola plays four songs loosely after them</li>
+      </ul>
+    </div>
+    <button class="help-close" id="help-close"><span class="ru">закрыть</span><span class="en">close</span></button>
+  </div>
+</div>
+
+<script>
+const GLYPHS = {
+'А':['.......','..###..','.#...#.','#.....#','#.....#','#######','#.....#','#.....#','.......'],
+'Б':['.......','######.','#......','#......','#####..','#....#.','#....#.','#####..','.......'],
+'В':['.......','#####..','#....#.','#....#.','#####..','#....#.','#....#.','#####..','.......'],
+'Г':['.......','######.','#......','#......','#......','#......','#......','#......','.......'],
+'Д':['.......','..####.','..#..#.','..#..#.','.#...#.','.#...#.','.#...#.','#######','#.....#'],
+'Е':['.......','######.','#......','#......','#####..','#......','#......','######.','.......'],
+'Ё':['.#...#.','.......','######.','#......','#####..','#......','#......','######.','.......'],
+'Ж':['.......','#..#..#','#..#..#','.#.#.#.','..###..','.#.#.#.','#..#..#','#..#..#','.......'],
+'З':['.......','.####..','#....#.','.....#.','..###..','.....#.','#....#.','.####..','.......'],
+'И':['.......','#.....#','#....##','#...#.#','#..#..#','#.#...#','##....#','#.....#','.......'],
+'Й':['..###..','#.....#','#....##','#...#.#','#..#..#','#.#...#','##....#','#.....#','.......'],
+'К':['.......','#....#.','#...#..','#..#...','###....','#..#...','#...#..','#....#.','.......'],
+'Л':['.......','.######','.#....#','.#....#','.#....#','.#....#','.#....#','#.....#','.......'],
+'М':['.......','#.....#','##...##','#.#.#.#','#..#..#','#.....#','#.....#','#.....#','.......'],
+'Н':['.......','#.....#','#.....#','#.....#','#######','#.....#','#.....#','#.....#','.......'],
+'О':['.......','.#####.','#.....#','#.....#','#.....#','#.....#','#.....#','.#####.','.......'],
+'П':['.......','#######','#.....#','#.....#','#.....#','#.....#','#.....#','#.....#','.......'],
+'Р':['.......','######.','#.....#','#.....#','######.','#......','#......','#......','.......'],
+'С':['.......','.#####.','#.....#','#......','#......','#......','#.....#','.#####.','.......'],
+'Т':['.......','#######','...#...','...#...','...#...','...#...','...#...','...#...','.......'],
+'У':['.......','#.....#','#.....#','.#...#.','..#.#..','...#...','..#....','###....','.......'],
+'Ф':['.......','...#...','.#####.','#..#..#','#..#..#','#..#..#','.#####.','...#...','.......'],
+'Х':['.......','#.....#','.#...#.','..#.#..','...#...','..#.#..','.#...#.','#.....#','.......'],
+'Ц':['.......','#....#.','#....#.','#....#.','#....#.','#....#.','#....#.','######.','......#'],
+'Ч':['.......','#.....#','#.....#','#.....#','.######','......#','......#','......#','.......'],
+'Ш':['.......','#..#..#','#..#..#','#..#..#','#..#..#','#..#..#','#..#..#','#######','.......'],
+'Щ':['.......','#..#..#','#..#..#','#..#..#','#..#..#','#..#..#','#..#..#','#######','......#'],
+'Ъ':['.......','##.....','.#.....','.#.....','.####..','.#...#.','.#...#.','.####..','.......'],
+'Ы':['.......','#.....#','#.....#','#.....#','####..#','#...#.#','#...#.#','####..#','.......'],
+'Ь':['.......','#......','#......','#......','#####..','#....#.','#....#.','#####..','.......'],
+'Э':['.......','.####..','#....#.','.....#.','..####.','.....#.','#....#.','.####..','.......'],
+'Ю':['.......','#..###.','#.#...#','#.#...#','###...#','#.#...#','#.#...#','#..###.','.......'],
+'Я':['.......','.######','#.....#','#.....#','.######','..#...#','.#....#','#.....#','.......'],
+};
+
+const ALPHABET = Object.keys(GLYPHS);
+const GW = 7, GH = 9;
+
+const VOWELS = new Set([...'АЕЁИОУЫЭЮЯ']);
+const VOICED = new Set([...'БВГДЖЗ']);
+const SONORANT = new Set([...'ЛМНРЙ']);
+const SIGNS = new Set([...'ЬЪ']);
+
+// ============================ ЖИЗНЬ ============================
+// Plain Conway B3/S23 on an infinite plane (sparse map). A live cell is a
+// Cyrillic letter from the 7×9 bitmap font; a newborn cell takes the letter
+// of one of its three parents, a survivor keeps its own. Colour = phonetic class.
+(() => {
+  const COLORS = { vowel:'#ffff55', voiced:'#ff5555', voiceless:'#55ffff', sonorant:'#55ff55', other:'#f0f0f0', sign:'#ff55ff' };
+  const SHADOWS = { vowel:'#4a4a18', voiced:'#4a1818', voiceless:'#184a4a', sonorant:'#184a18', other:'#3a3a3a', sign:'#4a184a' };
+  const VOICELESS = new Set([...'ПФКТСШХЦЧЩ']);
+  const classOf = ch => VOWELS.has(ch) ? 'vowel' : VOICED.has(ch) ? 'voiced' : VOICELESS.has(ch) ? 'voiceless' : SONORANT.has(ch) ? 'sonorant' : SIGNS.has(ch) ? 'sign' : 'other';
+  const CLASS_NAMES = {
+    ru: { vowel:'гласные', voiced:'звонкие', voiceless:'глухие', sonorant:'сонорные', sign:'знаки' },
+    en: { vowel:'vowels', voiced:'voiced', voiceless:'voiceless', sonorant:'sonorants', sign:'signs' },
+  };
+
+  function mulberry32(seed) { let a = seed >>> 0; return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+  // sparse world: key = packed (x, y); LIMIT keeps runaway gliders from eating memory forever
+  const LIMIT = 4000, SPAN = 2 * LIMIT + 1, key = (x, y) => (x + LIMIT) * SPAN + (y + LIMIT), unkey = k => [Math.floor(k / SPAN) - LIMIT, k % SPAN - LIMIT];
+  // Soup is seeded per 32×32 chunk from hash(seed, chunk) — the initial rectangle at once, then any
+  // chunk the camera reaches for the first time, so the plane keeps being populated in every direction.
+  const CHUNK = 32, SOUP_W = 480, SOUP_H = 300, DENSITY = 0.32;
+  const hash = (...v) => { let h = 2166136261 >>> 0; for (const n of v) { h ^= n | 0; h = Math.imul(h, 16777619); h ^= h >>> 13; } return h >>> 0; };
+
+  class Life {
+    constructor(seed) { this.reset(seed); }
+    reset(seed) {
+      this.seed = seed >>> 0; this.rng = mulberry32(this.seed); this.generation = 0; this.cells = new Map(); this.seeded = new Set(); this.frozen = false;
+      this.ensure(-SOUP_W / 2, -SOUP_H / 2, SOUP_W / 2, SOUP_H / 2);
+    }
+    ensure(x0, y0, x1, y1) {   // seed every unseeded chunk touching the rectangle
+      if (this.frozen) return;
+      for (let cy = Math.floor(y0 / CHUNK); cy <= Math.floor(y1 / CHUNK); cy++) for (let cx = Math.floor(x0 / CHUNK); cx <= Math.floor(x1 / CHUNK); cx++) {
+        const ck = cx * 65536 + cy; if (this.seeded.has(ck)) continue; this.seeded.add(ck);
+        const r = mulberry32(hash(this.seed, cx, cy));
+        for (let y = cy * CHUNK; y < (cy + 1) * CHUNK; y++) for (let x = cx * CHUNK; x < (cx + 1) * CHUNK; x++) if (r() < DENSITY) this.set(x, y, ALPHABET[r() * ALPHABET.length | 0]);
+      }
+    }
+    clear() { this.cells.clear(); this.generation = 0; this.frozen = true; }
+    randomLetter() { return ALPHABET[this.rng() * ALPHABET.length | 0]; }
+    get(x, y) { return Math.abs(x) < LIMIT && Math.abs(y) < LIMIT ? this.cells.get(key(x, y)) : undefined; }
+    set(x, y, ch) { if (Math.abs(x) >= LIMIT || Math.abs(y) >= LIMIT) return; if (ch) this.cells.set(key(x, y), ch); else this.cells.delete(key(x, y)); }
+    tick() {
+      const near = new Map();   // key -> array of neighbouring live letters
+      for (const [k, ch] of this.cells) {
+        const [x, y] = unkey(k);
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (dx || dy) {
+          const nx = x + dx, ny = y + dy; if (Math.abs(nx) >= LIMIT || Math.abs(ny) >= LIMIT) continue;
+          const nk = key(nx, ny), a = near.get(nk); if (a) a.push(ch); else near.set(nk, [ch]);
+        }
+      }
+      const next = new Map();
+      for (const [k, parents] of near) {
+        const n = parents.length, here = this.cells.get(k);
+        if (here) { if (n === 2 || n === 3) next.set(k, here); }
+        else if (n === 3) next.set(k, parents[this.rng() * 3 | 0]);
+      }
+      this.cells = next; this.generation++;
+    }
+    census() { const out = { alive: this.cells.size }; for (const ch of this.cells.values()) { const c = classOf(ch); out[c] = (out[c] || 0) + 1; } return out; }
+  }
+
+  // ---- language ----
+  let lang = 'ru'; try { lang = localStorage.getItem('bukvarium-lang') || 'ru'; } catch (e) {}
+  { const q = new URLSearchParams(location.search).get('lang'); if (q === 'en' || q === 'ru') lang = q; }
+  function setLang(l) { lang = l; document.documentElement.lang = l; try { localStorage.setItem('bukvarium-lang', l); } catch (e) {} document.getElementById('lang-ru').classList.toggle('on', l === 'ru'); document.getElementById('lang-en').classList.toggle('on', l === 'en'); updateUI(); }
+  document.getElementById('lang-ru').onclick = () => setLang('ru');
+  document.getElementById('lang-en').onclick = () => setLang('en');
+  const help = document.getElementById('help');
+  document.getElementById('help-btn').onclick = () => help.classList.add('open');
+  document.getElementById('help-close').onclick = () => help.classList.remove('open');
+  help.addEventListener('pointerdown', e => { if (e.target === help) help.classList.remove('open'); });
+  if (new URLSearchParams(location.search).has('help')) help.classList.add('open');
+
+  // ---- world + camera ----
+  const cvs = document.getElementById('sim'), ctx = cvs.getContext('2d');
+  function fit() { const w = cvs.clientWidth | 0, h = cvs.clientHeight | 0; if (w && h && (cvs.width !== w || cvs.height !== h)) { cvs.width = w; cvs.height = h; } }
+  fit(); addEventListener('resize', fit);
+  const params = new URLSearchParams(location.search), seedParam = parseInt(params.get('seed') || '', 10);
+  const newSeed = () => (Date.now() ^ 0xB10C1E) >>> 0;
+  const world = new Life(Number.isFinite(seedParam) ? seedParam : newSeed());
+  const warp = Math.min(5000, parseInt(params.get('warp') || '0', 10) || 0); for (let i = 0; i < warp; i++) world.tick();
+  window.__BUKVARIUM__ = { world };
+
+  const SPEEDS = [[1, '×¼'], [2, '×½'], [4, '×1'], [12, '×3']];
+  const ZOOMS = [[10, 1, '×½'], [20, 2, '×1'], [30, 3, '×1½'], [40, 4, '×2']];   // [cell px, glyph scale, label]
+  let speedI = 2, zoomI = 1, paused = false, acc = 0, last = performance.now();
+  let CELL = ZOOMS[zoomI][0], SCALE = ZOOMS[zoomI][1];
+  const camera = { x: 0, y: 0 };   // world coordinate (in cells) at the canvas centre
+  const viewW = () => cvs.width / CELL, viewH = () => cvs.height / CELL;
+  const originX = () => camera.x - viewW() / 2, originY = () => camera.y - viewH() / 2;
+
+  function setZoom(next, anchor = null) {
+    zoomI = Math.max(0, Math.min(ZOOMS.length - 1, next));
+    const fx = anchor ? anchor.fx : .5, fy = anchor ? anchor.fy : .5;
+    const wx = originX() + viewW() * fx, wy = originY() + viewH() * fy;   // world point under the anchor
+    CELL = ZOOMS[zoomI][0]; SCALE = ZOOMS[zoomI][1];
+    camera.x = wx - viewW() * fx + viewW() / 2; camera.y = wy - viewH() * fy + viewH() / 2;
+    document.getElementById('zoom-v').textContent = ZOOMS[zoomI][2];
+  }
+
+  function drawGlyph(ch, px, py) {
+    const g = GLYPHS[ch], k = classOf(ch), ox = px + ((CELL - GW * SCALE) >> 1), oy = py + ((CELL - GH * SCALE) >> 1);
+    ctx.fillStyle = SHADOWS[k];
+    for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) if (g[y][x] === '#') ctx.fillRect(ox + x * SCALE + SCALE, oy + y * SCALE + SCALE, SCALE, SCALE);
+    ctx.fillStyle = COLORS[k];
+    for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) if (g[y][x] === '#') ctx.fillRect(ox + x * SCALE, oy + y * SCALE, SCALE, SCALE);
+  }
+  function render() {
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cvs.width, cvs.height);
+    const ox = originX(), oy = originY(), x0 = Math.floor(ox), y0 = Math.floor(oy), x1 = Math.ceil(ox + viewW()), y1 = Math.ceil(oy + viewH());
+    world.ensure(x0 - CHUNK, y0 - CHUNK, x1 + CHUNK, y1 + CHUNK);
+    const sx = x => Math.round((x - ox) * CELL), sy = y => Math.round((y - oy) * CELL);
+    ctx.fillStyle = '#0c0c12';
+    for (let x = x0; x <= x1; x++) ctx.fillRect(sx(x), 0, 1, cvs.height);
+    for (let y = y0; y <= y1; y++) ctx.fillRect(0, sy(y), cvs.width, 1);
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { const ch = world.get(x, y); if (ch) drawGlyph(ch, sx(x), sy(y)); }
+  }
+
+  const stats = document.getElementById('stats');
+  const T = {
+    ru: { alive: 'живых', gen: 'поколение', pause: 'пауза', play: 'пуск' },
+    en: { alive: 'alive', gen: 'generation', pause: 'pause', play: 'play' },
+  };
+  function updateUI() {
+    const c = world.census(), t = T[lang], names = CLASS_NAMES[lang];
+    const parts = Object.keys(names).filter(k => c[k]).map(k => `<span class="n-${k}">${names[k]} ${c[k]}</span>`);
+    stats.innerHTML = `${t.alive} <b>${c.alive}</b> · ${t.gen} <b>${world.generation}</b>` + (parts.length ? ' · ' + parts.join(' · ') : '');
+  }
+
+  let frame = 0;
+  function loop(now) {
+    if (!paused) { acc += (now - last) / 1000 * SPEEDS[speedI][0]; while (acc >= 1) { world.tick(); acc--; } if (acc > 2) acc = 0; }
+    last = now; fit(); render(); if (frame++ % 4 === 0) updateUI(); requestAnimationFrame(loop);
+  }
+
+  const pauseBtn = document.getElementById('pause');
+  function setPaused(p) { paused = p; pauseBtn.innerHTML = `<span class="ru">${T.ru[p ? 'play' : 'pause']}</span><span class="en">${T.en[p ? 'play' : 'pause']}</span>`; }
+  pauseBtn.onclick = () => setPaused(!paused);
+  document.getElementById('step').onclick = () => { setPaused(true); world.tick(); };
+  document.getElementById('speed').onclick = () => { speedI = (speedI + 1) % SPEEDS.length; document.getElementById('speed-v').textContent = SPEEDS[speedI][1]; };
+  document.getElementById('zoom').onclick = () => setZoom((zoomI + 1) % ZOOMS.length);
+  const reset = () => { world.reset(newSeed()); camera.x = 0; camera.y = 0; };
+  document.getElementById('reset').onclick = reset;
+  document.getElementById('clear').onclick = () => { world.clear(); setPaused(true); };
+  document.addEventListener('click', e => { const b = e.target.closest('button'); if (b) b.blur(); });   // keep keyboard focus off buttons so arrows/space always reach the sim
+  addEventListener('keydown', e => {
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+    if (e.code === 'Escape') help.classList.remove('open');
+    if (help.classList.contains('open')) return;
+    if (e.code === 'Space') { e.preventDefault(); setPaused(!paused); }
+    else if (e.key === 'n' || e.key === 'т' || e.key === '.' || e.key === 'ю') { setPaused(true); world.tick(); }
+    else if (e.code === 'ArrowLeft' || e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'ArrowRight') {
+      e.preventDefault(); const d = { ArrowLeft: [-6, 0], ArrowRight: [6, 0], ArrowUp: [0, -4], ArrowDown: [0, 4] }[e.code]; camera.x += d[0]; camera.y += d[1];
+    }
+    else if (e.key === '+' || e.key === '=') setZoom(zoomI + 1);
+    else if (e.key === '-' || e.key === '_') setZoom(zoomI - 1);
+    else if (e.key === 'r' || e.key === 'к' || e.key === 'R' || e.key === 'К') reset();
+  });
+
+  // pointer: left-drag draws (mode chosen by the first cell), right/middle/shift-drag pans, wheel zooms about the cursor
+  let gesture = null;
+  const local = (cx, cy) => { const r = cvs.getBoundingClientRect(); const fx = (cx - r.left) / r.width, fy = (cy - r.top) / r.height; return { fx, fy, x: Math.floor(originX() + fx * viewW()), y: Math.floor(originY() + fy * viewH()), px: fx * cvs.width, py: fy * cvs.height }; };
+  cvs.addEventListener('contextmenu', e => e.preventDefault());
+  cvs.addEventListener('pointerdown', e => {
+    e.preventDefault(); cvs.setPointerCapture(e.pointerId); const p = local(e.clientX, e.clientY);
+    if (e.button !== 0 || e.shiftKey) { gesture = { id: e.pointerId, pan: true, px: p.px, py: p.py, cx: camera.x, cy: camera.y }; cvs.style.cursor = 'grabbing'; return; }
+    const mode = world.get(p.x, p.y) ? 'erase' : 'draw'; gesture = { id: e.pointerId, mode, lastKey: null }; paintAt(p);
+  });
+  function paintAt(p) { const k = p.x + ',' + p.y; if (gesture.lastKey === k) return; gesture.lastKey = k; if (gesture.mode === 'draw') { if (!world.get(p.x, p.y)) world.set(p.x, p.y, world.randomLetter()); } else world.set(p.x, p.y, null); }
+  cvs.addEventListener('pointermove', e => {
+    if (!gesture || gesture.id !== e.pointerId) return; const p = local(e.clientX, e.clientY);
+    if (gesture.pan) { camera.x = gesture.cx - (p.px - gesture.px) / CELL; camera.y = gesture.cy - (p.py - gesture.py) / CELL; } else paintAt(p);
+  });
+  const endGesture = () => { gesture = null; cvs.style.cursor = 'crosshair'; };
+  cvs.addEventListener('pointerup', endGesture); cvs.addEventListener('pointercancel', endGesture);
+  cvs.addEventListener('wheel', e => { e.preventDefault(); const p = local(e.clientX, e.clientY); setZoom(zoomI + (e.deltaY < 0 ? 1 : -1), p); }, { passive: false });
+
+  // title
+  const tc = document.getElementById('title').getContext('2d'), word = 'БУКВАРИУМ', pal = ['#ff5555', '#ffff55', '#55ff55', '#55ffff', '#ff55ff', '#f0f0f0', '#ffff55', '#ff5555', '#55ff55'];
+  [...word].forEach((ch, i) => { tc.fillStyle = pal[i]; for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) if (GLYPHS[ch][y][x] === '#') tc.fillRect(i * (GW + 1) * 4 + 4 + x * 4, 2 + y * 4, 4, 4); });
+
+  setLang(lang); setZoom(zoomI); requestAnimationFrame(loop);
+})();
+</script>
+
+<script>
+// ============================ РАДИОЛА ============================
+// Four songs почти-по-мотивам Аквариума about this very plane, written here,
+// sung by Suno (2026-08-30), covers by GPT Image. Lyrics as karaoke subtitles
+// timed with faster-whisper. Кланяемся БГ.
+(() => {
+  if (typeof document === 'undefined') return;
+  // lyric lines: [seconds, ru, en]
+  const CH = [
+    ['алфавит мёртв! (а буквы — ещё нет)', 'the alphabet is dead! (but the letters — not yet)'],
+    ['алфавит мёртв! (а мы ещё живём)', 'the alphabet is dead! (but we are still alive)'],
+    ['алфавит мёртв! (а буквы — ещё нет)', 'the alphabet is dead! (but the letters — not yet)'],
+    ['алфавит мёртв — и слава богу. идём.', 'the alphabet is dead — thank god. let\'s go.'],
+  ];
+  const B3 = [
+    ['бэ — три! эс — два — три!', 'b — three! s — two — three!'],
+    ['бэ — три! эс — два — три!', 'b — three! s — two — three!'],
+    ['трое позвонили — ты родился.', 'three of them called — you were born.'],
+    ['двое остались — ты живой.', 'two of them stayed — you\'re alive.'],
+  ];
+  const GAP = ['…', '…'];
+  const SONGS = [
+    { title: ['кардиограмма буквы ж', 'cardiogram of the letter ж'], sub: ['почти «кардиограмма» · табу, 1982', 'after «kardiogramma» · tabu, 1982'], accent: '#ff5555', file: 'radiola/01-kardiogramma.mp3', cover: 'radiola/cover-01.png',
+      lyrics: [[30,'я слушал кардиограмму буквы ж:','i listened to the cardiogram of the letter ж:'],[31.5,'шесть лапок бьются о чёрное стекло.','six little legs beating against black glass.'],[34,'она стоит на проволоке дней,','it stands on the wire of days,'],[38,'и каждый тик ей на один тик тяжело.','and every tick is one tick heavier.'],
+        [46,'вокруг неё — пустая ночь и сетка,','around it — empty night and a grid,'],[50,'вокруг неё — соседи: двое, трое.','around it — neighbours: two, three.'],[55,'ей нужно двое, чтобы дожить до утра,','it needs two to live till morning,'],[60,'и трое — чтобы рядом родилось живое.','and three — for something alive to be born beside it.'],
+        [66,'пульс — пиксель — пульс — пиксель:','pulse — pixel — pulse — pixel:'],[71,'жизнь — это правило, а не судьба.','life is a rule, not a fate.'],[76,'пульс — пиксель — пульс:','pulse — pixel — pulse:'],[80,'не бойся мерцать.','don\'t be afraid to flicker.'],
+        [86,'у гласных солнце в жёлтых глазах,','the vowels have the sun in their yellow eyes,'],[90,'у звонких кровь красней, чем зима.','the voiced have blood redder than winter.'],[96,'мягкий знак колдует в камышах:','the soft sign casts spells in the reeds:'],[100,'все буквы смертны. но смерть — не тьма.','all letters are mortal. but death is not darkness.'],
+        [108,...GAP],[124,'а если вдруг соседей станет четверо —','and if the neighbours suddenly become four —'],[130,'она уйдёт, не хлопнув дверью, без следа.','it will leave without slamming the door, without a trace.'],[135,'там, где была ж, останется квадрат ночи,','where ж was, a square of night will remain,'],[141,'и кто-нибудь родится там. когда-нибудь. всегда.','and someone will be born there. someday. always.'],
+        [147,'пульс — пиксель — пульс — пиксель:','pulse — pixel — pulse — pixel:'],[152,'жизнь — это правило, а не судьба.','life is a rule, not a fate.'],[156,'пульс — пиксель — пульс:','pulse — pixel — pulse:'],[161,'не бойся мерцать.','don\'t be afraid to flicker.'],
+        [167,'пульс. пиксель. пульс.','pulse. pixel. pulse.'],[171,'не бойся мерцать.','don\'t be afraid to flicker.'],[180,'пульс. пиксель. пульс. не бойся мерцать.','pulse. pixel. pulse. don\'t be afraid to flicker.'],[186,...GAP]] },
+    { title: ['под небом чёрным', 'under the black sky'], sub: ['почти «город золотой» · десять стрел, 1986', 'after «gorod zolotoy» · desyat strel, 1986'], accent: '#ffff55', file: 'radiola/02-pod-nebom.mp3', cover: 'radiola/cover-02.png',
+      lyrics: [[16,'под небом чёрным есть поле из букв,','under the black sky there is a field of letters,'],[23,'прозрачный тик, зелёная трава.','a transparent tick, green grass.'],[30,'в том поле ходят звери-письмена,','in that field walk beasts made of script,'],[34.5,'кириллицей поросшие слова.','words overgrown with cyrillic.'],
+        [42,'одна — как жук, шестиногая ж,','one is like a beetle, the six-legged ж,'],[48,'другая — о, что катится вдаль,','another — о, rolling into the distance,'],[54,'а третья — ш, стена о трёх ногах,','and the third — ш, a wall on three legs,'],[60,'чей шаг тяжёл, как старая печаль.','whose step is heavy as an old sorrow.'],
+        [66,...GAP],[85,'там планер по диагонали в ночь','there a glider goes diagonally into the night —'],[92,'идёт — пять клеток, и не нужно крыл.','five cells, and no need for wings.'],[98,'там блок стоит, как дом, четыре сотни лет,','there a block stands like a house for four hundred years,'],[104,'и мигалка мигает: «я здесь был».','and a blinker blinks: «i was here».'],
+        [112,'тебя там встретит огнегривый ы','there you\'ll be met by the fire-maned ы'],[117,'и синий й, исполненный очей,','and the blue й, full of eyes,'],[123,'и с ними мягкий знак небесный ь,','and with them the heavenly soft sign ь,'],[129,'чей свет так мягок, что и смерть — ничья.','whose light is so soft that even death is nobody\'s.'],
+        [135,'кто трёх соседей встретит — тот рождён,','who meets three neighbours — is born,'],[142,'кто двух хранит — тот проживёт ещё.','who keeps two — will live on.'],[149,'а кто один — тот станет тишиной,','and who is alone — becomes silence,'],[155,'и тишина — не худшее из всего.','and silence is not the worst of all.'],[165,...GAP]] },
+    { title: ['алфавит мёртв', 'the alphabet is dead'], sub: ['почти «рок-н-ролл мёртв» · день серебра, 1984', 'after «rock-n-roll myortv» · den serebra, 1984'], accent: '#55ffff', file: 'radiola/03-alfavit-mertv.mp3', cover: 'radiola/cover-03.png',
+      lyrics: [[27,'алфавит мёртв, а буквы — ещё нет,','the alphabet is dead, but the letters — not yet,'],[33,'алфавит мёртв, а буквы — ещё здесь.','the alphabet is dead, but the letters are still here.'],[39,'те, кто читал нас вслух, ушли за свет,','those who read us aloud have gone beyond the light,'],[44,'а мы живём, покуда сосед есть.','and we live as long as there\'s a neighbour.'],
+        [51,...CH[0]],[55,...CH[1]],[58,...CH[2]],[63,...CH[3]],
+        [69,'нам не нужны ни автор, ни словарь,','we need neither author nor dictionary,'],[74,'нам нужно трое рядом — и рассвет.','we need three beside us — and the dawn.'],[80,'родился — значит, кто-то дал тебе','born — means someone gave you'],[88,'свою букву. другого смысла нет.','their letter. there is no other meaning.'],
+        [94,'гласные растут, где свет сквозит,','vowels grow where the light shines through,'],[100,'глухие ш стоят стеной, как встарь.','the voiceless ш stand as a wall, as of old.'],[106,'никто никем не съеден — лишь закон:','no one is eaten by anyone — only the law:'],[111,'два или три — живи; а нет — усни.','two or three — live; if not — sleep.'],
+        [117,...CH[0]],[121,...CH[1]],[125,...CH[2]],[129,...CH[3]],[133,'алфавит мёртв! алфавит мёртв!','the alphabet is dead! the alphabet is dead!'],
+        [142,...CH[0]],[146,...CH[1]],[150,...CH[2]],[154,...CH[3]],[157,...GAP],
+        [163,'когда погаснет вкладка — будет свет:','when the tab goes dark — there will be light:'],[167,'из нашей пыли вырастет строка.','from our dust a line will grow.'],[178,'планер уйдёт за край экрана в ночь','the glider will go past the edge of the screen into the night'],[182,'и будет жить, пока течёт река.','and will live as long as the river flows.'],
+        [188,...CH[0]],[192,...CH[1]],[196,...CH[2]],[200,...CH[3]],[204,...CH[0]],[208,...CH[1]],[213,...CH[2]],[217,...CH[3]],[223,'алфавит мёртв — и слава богу. идём.','the alphabet is dead — thank god. let\'s go.']] },
+    { title: ['б3 / с23', 'b3 / s23'], sub: ['почти «2-12-85-06» · дети декабря, 1985', 'after «2-12-85-06» · deti dekabrya, 1985'], accent: '#ff55ff', file: 'radiola/04-b3-s23.mp3', cover: 'radiola/cover-04.png',
+      lyrics: [[18,'я знаю номер, по которому рождаются.','i know the number you call to be born.'],[24,'он короткий. его знают все, кто жив.','it\'s short. everyone alive knows it.'],[29,'его не надо запоминать —','you don\'t have to memorise it —'],[32,'его невозможно забыть.','it\'s impossible to forget.'],
+        [37,...B3[0]],[40,...B3[1]],[45,...B3[2]],[49,...B3[3]],
+        [58,'четверо — это уже толпа.','four — that\'s already a crowd.'],[61,'один — это уже никто.','one — that\'s already nobody.'],[67,'всё остальное — свет и снег,','everything else is light and snow,'],[70,'и у света нет номера.','and the light has no number.'],
+        [77,...B3[0]],[81,...B3[1]],[85,...B3[2]],[90,...B3[3]],[95,...B3[0]],[97,...B3[1]],[99,...B3[2]],[103,...B3[3]],[108,...GAP],
+        [127,'бэ три. эс два три.','b three. s two three.'],[129,'не занято.','not busy.'],[134,'никогда не занято.','never busy.'],[138,...GAP]] },
+  ];
+
+  const audio = new Audio(); audio.preload = 'none';
+  let songI = 0, playing = false;
+  const L = () => document.documentElement.lang === 'en' ? 1 : 0;
+  const cover = document.getElementById('cover'), rTitle = document.getElementById('r-title'), rSub = document.getElementById('r-sub');
+  const rPlay = document.getElementById('r-play'), rNext = document.getElementById('r-next'), rPrev = document.getElementById('r-prev'), rLyric = document.getElementById('r-lyric');
+
+  function showSong() {
+    const s = SONGS[songI], l = L();
+    rTitle.textContent = s.title[l]; rTitle.style.color = s.accent;
+    rSub.textContent = s.sub[l];
+    if (cover.getAttribute('src') !== s.cover) { cover.src = s.cover; cover.alt = s.title[l]; }
+    if (!audio.src.endsWith(s.file)) { audio.src = s.file; paint(-1); }
+  }
+  let shown = -1, sliding = false;
+  const at = (lines, k, l) => (k >= 0 && k < lines.length ? lines[k][1 + l] : k === -1 && lines.length ? '' : '');
+  function paint(i) {
+    const l = L(), lines = SONGS[songI].lyrics; shown = i;
+    rLyric.innerHTML = `<div class="roll"><div class="prev">${at(lines, i - 1, l)}</div><div class="cur">${i >= 0 ? at(lines, i, l) : '…'}</div><div class="next">${at(lines, i + 1, l)}</div><div class="next">${at(lines, i + 2, l)}</div></div>`;
+  }
+  function karaoke(force) {
+    if ((!playing && !force) || sliding) return;
+    const t = audio.currentTime, lines = SONGS[songI].lyrics; let i = -1;
+    for (let k = 0; k < lines.length; k++) if (lines[k][0] <= t) i = k; else break;
+    if (i === shown && !force) return;
+    if (force || i !== shown + 1 || shown < 0) return paint(i);
+    // advance by one: slide the roll up by the height of the outgoing top row, then rebuild in place
+    const roll = rLyric.firstElementChild, rows = roll.children, h = rows[0].offsetHeight;
+    sliding = true; rows[1].className = 'prev'; rows[2].className = 'cur';
+    roll.classList.add('slide'); roll.style.transform = `translateY(-${h}px)`;
+    setTimeout(() => { sliding = false; paint(i); }, 520);
+  }
+  function start() { audio.play().then(() => { playing = true; rPlay.textContent = '▌▌'; rPlay.title = L() ? 'pause' : 'пауза'; }).catch(() => {}); }
+  function pause() { audio.pause(); playing = false; rPlay.textContent = '▶'; rPlay.title = L() ? 'play' : 'играть'; }
+  function go(i, keepPlaying) { if (playing) pause(); songI = (i + SONGS.length) % SONGS.length; audio.currentTime = 0; showSong(); if (keepPlaying) start(); }
+  audio.addEventListener('ended', () => go(songI + 1, true));
+  rPlay.onclick = () => (playing ? pause() : start());
+  rNext.onclick = () => go(songI + 1, playing);
+  rPrev.onclick = () => { if (audio.currentTime > 3) { audio.currentTime = 0; } else go(songI - 1, playing); };
+  rPrev.textContent = '◀◀'; rNext.textContent = '▶▶';
+  new MutationObserver(() => { showSong(); karaoke(true); }).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+  setInterval(karaoke, 150);
+  showSong(); pause();
+})();
+</script>
+</body>
+</html>
