@@ -24,7 +24,8 @@ python3 -m http.server 8080
 - **Birth** — a dead cell with exactly three live neighbours comes alive. It takes the letter of one of the three, at random.
 - **Survival** — a live cell with two or three neighbours stays; anything else dies.
 - **Colour** — the letter's phonetic class: <span style="color:#ffff55">vowels</span> yellow · <span style="color:#ff5555">voiced</span> red · <span style="color:#55ffff">voiceless</span> cyan · <span style="color:#55ff55">sonorants</span> green · <span style="color:#ff55ff">signs (Ь Ъ)</span> magenta.
-- **The plane is infinite.** The world is a sparse map; gliders leave the screen and keep going. A fresh 480×300 soup is seeded at start, and every 32×32 chunk the camera reaches for the first time is seeded too (deterministically from the seed), so panning never runs out of world.
+- **Afterglow** — when a letter dies, its glyph lingers as a teal phosphor ghost and fades out over about a second, so moving things leave trails like on an old CRT.
+- **The plane is (almost) infinite.** The world is stored as 64×64 tiles and only tiles with something alive in them are computed; gliders leave the screen and keep going, out to ±4096 cells. A fresh 480×300 soup is seeded at start, and every 32×32 chunk the camera reaches for the first time is seeded too (deterministically from the seed), so panning never runs out of world.
 
 ![a fresh soup](screenshots/soup.png)
 
